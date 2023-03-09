@@ -28,7 +28,13 @@ passages = []
 for ind, r in ceos_table.iterrows():
     txt = str(r)
     passages.append(txt)
-corpus_embeddings = torch.from_numpy(np.load('corpus_embeddings.npy'))
+
+try:
+  corpus_embeddings = torch.from_numpy(np.load('corpus_embeddings.npy'))
+except FileNotFoundError:
+  print('Embeddings not found. Creating new ones')
+  # We encode all passages into our vector space. This takes about 5 minutes (depends on your GPU speed)
+  corpus_embeddings = bi_encoder.encode(passages, convert_to_tensor=True, show_progress_bar=True)
 
 
 # This function will search all wikipedia articles for passages that
