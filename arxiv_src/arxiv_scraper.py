@@ -1,10 +1,7 @@
 from paperscraper.get_dumps import biorxiv, medrxiv, chemrxiv
-from arxiv_utils import get_and_dump_arxiv_papers
-from arxiv_utils import save_pdf_from_dump
+from arxiv_src.arxiv_utils import get_and_dump_arxiv_papers
+from arxiv_src.arxiv_utils import save_pdf_from_dump
 import arxiv
-import json
-from typing import Any, Dict, List
-from tqdm import tqdm
 
 import logging
 import sys
@@ -20,7 +17,7 @@ def get_metadata(query, output_filepath='/home/lcamilleri/git_repos/NLP4EO/arxiv
 
 def get_pdfs_custom():
     save_pdf_from_dump('/home/lcamilleri/git_repos/NLP4EO/arxiv_data/test.jsonl',
-                       pdf_path='/home/lcamilleri/git_repos/NLP4EO/arxiv_data/EO_papers', key_to_save='title')
+                       pdf_path='/arxiv_data/EO_papers', key_to_save='title')
 
 
 def main():
