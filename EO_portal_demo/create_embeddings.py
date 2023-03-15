@@ -38,7 +38,7 @@ def parse_jsons(json_paths, bi_encoder, max_tokens_per_passage):
     return chapter_content
 
 if __name__=='__main__':
-    json_files = glob.glob('EoDirectoryMissionExport/**.json', recursive=True)
+    json_files = glob.glob('/home/lcamilleri/Downloads/EoDirectoryMissionExport/**.json', recursive=True)
     assert len(json_files)>0
     
     max_tokens_per_passage = 256
@@ -47,6 +47,6 @@ if __name__=='__main__':
     chapter_contents = parse_jsons(json_files, bi_encoder, max_tokens_per_passage)
     corpus_embeddings = bi_encoder.encode(chapter_contents, convert_to_tensor=True, show_progress_bar=True)
 
-    np.save('chapter_embeddings', corpus_embeddings)
-    with open("chapter_txt", "wb") as fp:   #Pickling
+    np.save('chapter_embeddings', corpus_embeddings.cpu())
+    with open("chapter_txt.pkl.pkl", "wb") as fp:   #Pickling
         pickle.dump(chapter_contents, fp)
