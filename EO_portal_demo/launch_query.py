@@ -24,23 +24,11 @@ top_k = 32                          #Number of passages we want to retrieve with
 #The bi-encoder will retrieve 100 documents. We use a cross-encoder, to re-rank the results list to improve the quality
 cross_encoder = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')
 
-
-# passages = []
-# for ind, r in ceos_table.iterrows():
-#     txt = str(r)
-#     passages.append(txt)
-
-# try:
-#   corpus_embeddings = torch.from_numpy(np.load('corpus_embeddings.npy'))
-# except FileNotFoundError:
-#   print('Embeddings not found. Creating new ones')
-#   # We encode all passages into our vector space. This takes about 5 minutes (depends on your GPU speed)
-#   corpus_embeddings = bi_encoder.encode(passages, convert_to_tensor=True, show_progress_bar=True)
 print('loading chapters')
-with open("EO_portal_demo/chapter_content", "rb") as fp:   # Unpickling
+with open("EO_portal_demo/chapter_txt.pkl", "rb") as fp:   # Unpickling
     passages = pickle.load(fp)
 print('loading embeddings')
-corpus_embeddings = torch.from_numpy(np.load('EO_portal_demo/content_embeddings.npy'))
+corpus_embeddings = torch.from_numpy(np.load('EO_portal_demo/chapter_embeddings.npy'))
 
 # This function will search all wikipedia articles for passages that
 # answer the query
@@ -53,8 +41,14 @@ def search(query):
     question_embedding = question_embedding#.cuda()
     
     print('bi encoder search ...')
-    hits = util.semantic_search(question_embedding, corpus_embeddings, top_k=top_k)
+    hits = util.semantic_search(question_embedding, corpus_embeddings, top_k=top_k*2)
     hits = hits[0]  # Get the hits for the first query
+
+    #deduplicate too similar results
+    hits_df = pd.DataFrame(hits)[:32]
+    hits_df.score  = hits_df.score.apply(lambda x: round(x,6))
+    hits_df_dropped = hits_df.drop_duplicates(subset='score').sort_values('score')[::-1]
+    hits = hits_df_dropped.to_dict(orient='records')[:top_k]
 
     ##### Re-Ranking #####
     # Now, score all retrieved passages with the cross_encoder
@@ -70,44 +64,44 @@ def search(query):
     # # Output of top-5 hits from bi-encoder
     # print("\n-------------------------\n")
     # print("Top-3 Bi-Encoder Retrieval hits")
-    hits = sorted(hits, key=lambda x: x['score'], reverse=True)
+    hits = sorted(hits, key=lambda x: x['cross-score'], reverse=True)
 
     return hits
 
-# kw = 'sentinel-2'
-# context = ''
-# for r in ceos_table.iterrows():
-#     txt = str(r)
-#     if kw in txt.lower():
-#         context = context + txt + '\n\n'
-
-query = "List all instruments that work wit SAR data"
-
-hits = search(query = query)
-
-context = ''
-# Output of top-5 hits from re-ranker
-print("\n-------------------------\n")
-print("Top-3 Cross-Encoder Re-ranker hits")
-hits = sorted(hits, key=lambda x: x['cross-score'], reverse=True)
-for hit in hits[0:7]:
-    context = context + passages[hit['corpus_id']] + '\n\n'
-    print("\t{}".format( passages[hit['corpus_id']].replace("\n", " ")))
-    print('\n\n')
-
-
-
-
-model = "gpt-3.5-turbo"
-prompt = f"{query}. Base your answer only on the given context. Show your answer is correct by listing all the different sources used to provide the answer in the format SOURCE <insert text> chapter <insert text>. \
-      If the information is not available please say so. \n Context: '''{context}'''"
-completion = openai.ChatCompletion.create(
+def call_GPT(model, prompt):
+  completion = openai.ChatCompletion.create(
   messages = [{"role": "system", "content": prompt},],
   model=model,
-  #prompt=prompt,
-  max_tokens = 4096 - int(1.1*len(bi_encoder.tokenizer.encode(prompt))),
-  temperature=0
-)
+  #max_tokens = 4096 - int(1.1*len(bi_encoder.tokenizer.encode(prompt))),
+  temperature=0)
 
-print(completion)
-print(completion['choices'][0]['message']['content'])
+  return completion
+
+
+if __name__ == '__main__':
+  GPT_model = "gpt-3.5-turbo"
+
+  query = "What are the spectral bands and the wavelenghts captured by sentinel-2"
+  use_GPT_as_source = False # whether we want to use GPT inherent knowledge as a source as well
+
+  # add best n sources to context for GPT
+  context = ''
+  hits = search(query = query)
+  for hit in hits[0:10]:
+      context = context + passages[hit['corpus_id']] + '\n\n'
+
+
+  if use_GPT_as_source:
+    gpt_answer = call_GPT(GPT_model, query)
+    print('GPT answer',gpt_answer)
+    context = context + '\n\n' +  gpt_answer['choices'][0]['message']['content'] + '\nSOURCE: GPT chapter GPT'
+
+  prompt = f" You are a truthful assistant that helps synthesising information from multiple sources. \
+  Base your answer only on the given context and show your answer is correct by listing all the different sources used to provide the answer in the format SOURCE <insert text> chapter <insert text>. \
+  Not all context might be relevant.\
+  The query is: {query}  \n Context: '''{context}'''"
+
+  completion = call_GPT(GPT_model,prompt)
+  print(completion)
+  print(completion['choices'][0]['message']['content'])
+
