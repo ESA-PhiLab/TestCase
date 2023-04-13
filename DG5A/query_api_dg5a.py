@@ -5,11 +5,16 @@ import torch
 import numpy as np
 from sentence_transformers import SentenceTransformer, CrossEncoder, util
 import pickle
+import os
+
+# BASE_PATH="/home/lcamilleri/git_repos/NLP4EO/DG5A/"
+BASE_PATH=""
 
 class spacelaw_bot():
     def __init__(self, source_arxiv=True):
-        with open('/home/lcamilleri/git_repos/NLP4EO/api_key.json', 'r') as f:
-            self.key = json.load(f)['key']
+        # with open('/home/lcamilleri/git_repos/NLP4EO/api_key.json', 'r') as f:
+        #     json.load(f)['key']
+        self.key = os.environ['api_key']
         self.model = "gpt-3.5-turbo"
         # self.text_resources = pd.read_csv('/home/lcamilleri/git_repos/NLP4EO/arxiv_data/papers_text_data_wo_sw.csv', lineterminator='\n')
         # self.corpus_embeddings = torch.from_numpy(np.load('/home/lcamilleri/git_repos/NLP4EO/arxiv_src/paper_embeddings_wo_sw.npy')).cuda()
@@ -19,10 +24,10 @@ class spacelaw_bot():
         self.top_k = 32  # Number of passages we want to retrieve with the bi-encoder
         self.top_r = 5
 
-        self.text_resources = pd.read_csv('/home/lcamilleri/git_repos/NLP4EO/DG5A/dg5a_articles.csv',
+        self.text_resources = pd.read_csv(f'{BASE_PATH}dg5a_articles.csv',
                                           lineterminator='\n')
         self.corpus_embeddings = torch.from_numpy(
-            np.load('/home/lcamilleri/git_repos/NLP4EO/DG5A/DG5A_embeddings.npy')).cuda()
+            np.load(f'{BASE_PATH}DG5A_embeddings.npy')).cuda()
 
     def sematic_search(self, query):
         question_embedding = self.bi_encoder.encode(query, convert_to_tensor=True)
