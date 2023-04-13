@@ -11,6 +11,8 @@ import sys
 from typing import Dict, List
 
 import pandas as pd
+import os
+import time
 
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -144,18 +146,30 @@ def get_arxiv_papers(
     search = arxiv.Search(query=query, max_results=max_results, **search_options)
     results = client.results(search)
 
-    processed = pd.DataFrame(
-        [
-            {
-                arxiv_field_mapper.get(key, key): process_fields.get(
-                    arxiv_field_mapper.get(key, key), lambda x: x
-                )(value)
-                for key, value in vars(paper).items()
-                if arxiv_field_mapper.get(key, key) in fields
-            }
-            for paper in results
-        ]
-    )
+    l = []
+    for paper in results:
+        d = {}
+        try:
+            for key, value in vars(paper).items():
+                if arxiv_field_mapper.get(key, key) in fields:
+                    d[arxiv_field_mapper.get(key, key)] = process_fields.get(arxiv_field_mapper.get(key, key), lambda x: x)(value)
+        except:
+            print(f'error with: {paper}')
+        l.append(d)
+    processed = pd.DataFrame(l)
+
+    # processed = pd.DataFrame(
+    #     [
+    #         {
+    #             arxiv_field_mapper.get(key, key): process_fields.get(
+    #                 arxiv_field_mapper.get(key, key), lambda x: x
+    #             )(value)
+    #             for key, value in vars(paper).items()
+    #             if arxiv_field_mapper.get(key, key) in fields
+    #         }
+    #         for paper in results
+    #     ]
+    # )
     return processed
 
 
@@ -212,6 +226,7 @@ def save_pdf_from_dump(dump_path: str, pdf_path: str, key_to_save: str = "doi") 
     papers = load_jsonl(dump_path)
 
     pbar = tqdm(papers, total=len(papers), desc="Processing")
+
     for i, paper in enumerate(pbar):
         pbar.set_description(f"Processing paper {i+1}/{len(papers)}")
 
@@ -221,7 +236,12 @@ def save_pdf_from_dump(dump_path: str, pdf_path: str, key_to_save: str = "doi") 
         filename = paper[key_to_save].replace("/", "_")
         id = paper["entry_id"].split('/')[-1]
         try:
-            paper_pdf = next(arxiv.Search(id_list=[id]).results())
-            paper_pdf.download_pdf(dirpath=pdf_path, filename=f"{filename}.pdf")
+            if not os.path.isfile(f'{pdf_path}/{filename}.pdf'):
+                print('\nresting...')
+                time.sleep(4)
+                print(f'downloading {filename}.pdf...')
+                paper_pdf = next(arxiv.Search(id_list=[id]).results())
+                paper_pdf.download_pdf(dirpath=pdf_path, filename=f"{filename}.pdf")
+
         except:
             print(f'PDF not Found: {id}')

@@ -64,7 +64,7 @@ def gen_papers_csv(rm_stopwords=False):
 def gen_abstract_embeddings():
     meta_data = pd.read_csv('/home/lcamilleri/git_repos/NLP4EO/arxiv_data/papers_text_data_wo_sw.csv', lineterminator='\n')
     # We use the Bi-Encoder to encode all passages, so that we can use it with sematic search
-    bi_encoder = SentenceTransformer('multi-qa-MiniLM-L6-cos-v1')
+    bi_encoder = SentenceTransformer('multi-qa-mpnet-base-dot-v1')
     bi_encoder.max_seq_length = 512  # Truncate long passages to 256 tokens
     top_k = 32  # Number of passages we want to retrieve with the bi-encoder
 

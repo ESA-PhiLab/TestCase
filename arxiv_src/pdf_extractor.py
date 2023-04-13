@@ -18,6 +18,8 @@ from pathlib import Path
 from tqdm import tqdm
 import os
 import json
+
+
 EOF_MARKER = b'%%EOF'
 
 
@@ -26,7 +28,7 @@ def extract_text(file_path):
         # Extract text from a PDF file
         text = ''
         try:
-            reader = PdfReader(str(file_path))
+            reader = PdfReader(str(file_path), strict=True)
 
             number_of_pages = len(reader.pages)
             for i in range(number_of_pages):
@@ -81,7 +83,7 @@ def main():
 
             dict = {"title": pdf.stem}
             for i in range(len(text_chunks)):
-                dict[f"chunk_{i}"] = text_chunks[i]
+                dict[f"paragraph_{i}"] = text_chunks[i]
 
             with open(f"/home/lcamilleri/git_repos/NLP4EO/arxiv_data/EO_textdata/{pdf.stem}.json", "w") as fp:
                 json.dump(dict, fp)
