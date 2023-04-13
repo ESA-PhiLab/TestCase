@@ -5,13 +5,16 @@ import torch
 import  numpy as np
 from sentence_transformers import SentenceTransformer, CrossEncoder, util
 
+BASE_PATH = '/home/lcamilleri/git_repos/'
+BASE_PATH = ''
+
 class EO_bot():
     def __init__(self):
-        with open('/home/lcamilleri/git_repos/NLP4EO/api_key.json', 'r') as f:
+        with open(f'{BASE_PATH}api_key.json', 'r') as f:
             self.key = json.load(f)['key']
         self.model = "gpt-3.5-turbo"
-        self.text_resources = pd.read_csv('/home/lcamilleri/git_repos/NLP4EO/arxiv_data/papers_text_data_wo_sw.csv', lineterminator='\n')
-        self.corpus_embeddings = torch.from_numpy(np.load('/home/lcamilleri/git_repos/NLP4EO/arxiv_src/paper_embeddings_wo_sw.npy')).cuda()
+        self.text_resources = pd.read_csv(f'{BASE_PATH}arxiv_data/papers_text_data_wo_sw.csv', lineterminator='\n')
+        self.corpus_embeddings = torch.from_numpy(np.load(f'{BASE_PATH}arxiv_src/paper_embeddings_wo_sw.npy')).cuda()
         self.bi_encoder = SentenceTransformer('multi-qa-MiniLM-L6-cos-v1').cuda()
         self.bi_encoder.max_seq_length = 512  # Truncate long passages to 256 tokens
         self.cross_encoder = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')

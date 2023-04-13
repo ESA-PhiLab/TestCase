@@ -17,6 +17,9 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 stop_words = stopwords.words('english')
 stopwords_dict = Counter(stop_words)
+
+BASE_PATH = '/home/lcamilleri/git_repos/'
+# BASE_PATH = ''
 def remove_stopwords(text):
     text = text.replace('\n', ' ')
     text_tokens = text.split(' ')
@@ -24,7 +27,7 @@ def remove_stopwords(text):
     return " ".join(tokens_without_sw)
 
 def gen_papers_csv(rm_stopwords=False):
-    meta_data = pd.read_json('/home/lcamilleri/git_repos/NLP4EO/arxiv_data/EO_RS_papers.jsonl', lines=True)
+    meta_data = pd.read_json(f'{BASE_PATH}arxiv_data/EO_RS_papers.jsonl', lines=True)
     df = pd.DataFrame()
 
     for index, row in tqdm(meta_data.iterrows()):
@@ -36,7 +39,7 @@ def gen_papers_csv(rm_stopwords=False):
         df = df.append(abs)
 
         try:
-            text_data = pd.read_json(f'/home/lcamilleri/git_repos/NLP4EO/arxiv_data/EO_textdata/{title}.json', lines=True)
+            text_data = pd.read_json(f'{BASE_PATH}arxiv_data/EO_textdata/{title}.json', lines=True)
             # ignore first two chunks and last 5. Course way of removing noise and references
             text_data = text_data.iloc[:, 2:-5]
             for index, col in text_data.T.iterrows():
@@ -55,14 +58,14 @@ def gen_papers_csv(rm_stopwords=False):
 
     df.reset_index(drop=True, inplace=True)
     if remove_stopwords:
-        df.to_csv('/home/lcamilleri/git_repos/NLP4EO/arxiv_data/papers_text_data_wo_sw.csv')
+        df.to_csv(f'{BASE_PATH}arxiv_data/papers_text_data_wo_sw.csv')
     else:
-        df.to_csv('/home/lcamilleri/git_repos/NLP4EO/arxiv_data/papers_text_data.csv')
+        df.to_csv(f'{BASE_PATH}arxiv_data/papers_text_data.csv')
 
 
 
 def gen_abstract_embeddings():
-    meta_data = pd.read_csv('/home/lcamilleri/git_repos/NLP4EO/arxiv_data/papers_text_data_wo_sw.csv', lineterminator='\n')
+    meta_data = pd.read_csv(f'{BASE_PATH}arxiv_data/papers_text_data_wo_sw.csv', lineterminator='\n')
     # We use the Bi-Encoder to encode all passages, so that we can use it with sematic search
     bi_encoder = SentenceTransformer('multi-qa-MiniLM-L6-cos-v1')
     bi_encoder.max_seq_length = 512  # Truncate long passages to 256 tokens
@@ -81,7 +84,7 @@ def gen_abstract_embeddings():
 
 def search(query):
     print("Input question:", query)
-    meta_data = pd.read_csv('/home/lcamilleri/git_repos/NLP4EO/arxiv_data/papers_text_data_wo_sw.csv', lineterminator='\n')
+    meta_data = pd.read_csv(f'{BASE_PATH}arxiv_data/papers_text_data_wo_sw.csv', lineterminator='\n')
     corpus_embeddings = torch.from_numpy(np.load('paper_embeddings_wo_sw.npy')).cuda()
     # We use the Bi-Encoder to encode all passages, so that we can use it with sematic search
     bi_encoder = SentenceTransformer('multi-qa-MiniLM-L6-cos-v1').cuda()
@@ -122,7 +125,7 @@ def search(query):
 def summarize_text(query):
     bi_encoder = SentenceTransformer('multi-qa-MiniLM-L6-cos-v1')
 
-    with open('/home/lcamilleri/git_repos/NLP4EO/api_key.json', 'r') as f:
+    with open(f'{BASE_PATH}api_key.json', 'r') as f:
         key = json.load(f)['key']
     openai.api_key = key
 
@@ -143,7 +146,7 @@ def summarize_text(query):
 def extract_keywords(query):
     bi_encoder = SentenceTransformer('multi-qa-MiniLM-L6-cos-v1')
 
-    with open('/home/lcamilleri/git_repos/NLP4EO/api_key.json', 'r') as f:
+    with open(f'{BASE_PATH}api_key.json', 'r') as f:
         key = json.load(f)['key']
     openai.api_key = key
 
@@ -186,7 +189,7 @@ def summarise(query, top_5_responses):
     context = ''
     bi_encoder = SentenceTransformer('multi-qa-MiniLM-L6-cos-v1')
 
-    with open('/home/lcamilleri/git_repos/NLP4EO/api_key.json', 'r') as f:
+    with open(f'{BASE_PATH}api_key.json', 'r') as f:
         key = json.load(f)['key']
 
     openai.api_key = key
