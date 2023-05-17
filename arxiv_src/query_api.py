@@ -6,6 +6,9 @@ import numpy as np
 from sentence_transformers import SentenceTransformer, CrossEncoder, util
 import pickle
 
+BASE_PATH = '/home/lcamilleri/git_repos/'
+BASE_PATH = ''
+
 class EO_bot():
     def __init__(self, source_arxiv=True):
         with open('/home/lcamilleri/git_repos/NLP4EO/api_key.json', 'r') as f:
@@ -14,6 +17,7 @@ class EO_bot():
         # self.text_resources = pd.read_csv('/home/lcamilleri/git_repos/NLP4EO/arxiv_data/papers_text_data_wo_sw.csv', lineterminator='\n')
         # self.corpus_embeddings = torch.from_numpy(np.load('/home/lcamilleri/git_repos/NLP4EO/arxiv_src/paper_embeddings_wo_sw.npy')).cuda()
         self.bi_encoder = SentenceTransformer('multi-qa-mpnet-base-dot-v1').cuda()
+
         self.bi_encoder.max_seq_length = 512  # Truncate long passages to 256 tokens
         self.cross_encoder = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-12-v2')
         self.top_k = 100  # Number of passages we want to retrieve with the bi-encoder
