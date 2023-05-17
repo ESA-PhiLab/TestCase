@@ -4,25 +4,59 @@ import pandas as pd
 import numpy as np
 import requests
 import query_api
+import  streamlit_toggle as tog
 
 def main():
-    EO_bot = query_api.EO_bot()
+    flag = False
+
     st.set_page_config(
         page_title="EO Chat - Demo",
         page_icon=":robot:"
     )
 
+    arxiv = tog.st_toggle_switch(label=" EoPortal Articles or ArXiv Papers",
+                             key="Key1",
+                             default_value=True,
+                             label_after=False,
+                             inactive_color='#D3D3D3',
+                             active_color="#11567f",
+                             track_color="#29B5E8"
+                             )
+    if arxiv:
+        source = 'ArXiv Papers'
+    else:
+        source = 'EoPortal Articles'
+
+    EO_bot = query_api.EO_bot(source_arxiv=arxiv)
+
+
+    # eo = tog.st_toggle_switch(label="EO Portal Articles",
+    #                              key="Key1",
+    #                              default_value=False,
+    #                              label_after=True,
+    #                              inactive_color='#D3D3D3',
+    #                              active_color="#11567f",
+    #                              track_color="#29B5E8"
+    #                              )
+
     # API_URL = "https://api-inference.huggingface.co/models/facebook/blenderbot-400M-distill"
     # headers = {"Authorization": st.secrets['api_key']}
 
     st.header("EO Chat - Demo")
-    st.markdown("[Github](https://github.com/ai-yash/st-chat)")
+    st.markdown("[Github](https://github.com/LuytsA/NLP4EO)")
 
     if 'generated' not in st.session_state:
         st.session_state['generated'] = []
 
     if 'past' not in st.session_state:
         st.session_state['past'] = []
+
+    if not st.session_state['generated']:
+        st.session_state.generated.append('Hello, I am EO Bot. Please ask me any Earth Observation related questions '
+                                          'based on my information source.\n'
+                                          f'Information source: {source}')
+        st.session_state.past.append('Hi!')
+
 
     def query(payload):
         top_sources = EO_bot.sematic_search(payload)
